@@ -1,5 +1,6 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
+from dateutil import parser
 from time import time
 from urllib.parse import unquote, quote
 
@@ -181,8 +182,10 @@ class Tapper:
             next_refresh = worm_info['data'].get('next_worm')
             worm_caught = worm_info['data'].get('is_caught', False)
             if next_refresh:
-                next_refresh_dt = datetime.fromisoformat(next_refresh[:-1] + '+00:00')
-                now_utc = datetime.now(pytz.utc)
+                # next_refresh_dt = datetime.fromisoformat(next_refresh[:-1] + '+00:00')
+                # now_utc = datetime.now(pytz.utc)
+                next_refresh_dt = parser.isoparse(next_refresh)
+                now_utc = datetime.now(timezone.utc)
                 time_difference_seconds = (next_refresh_dt - now_utc).total_seconds()
                 hours = int(time_difference_seconds // 3600)
                 minutes = int((time_difference_seconds % 3600) // 60)
@@ -322,10 +325,13 @@ class Tapper:
                     if bird_data is None:
                         logger.info(f"{self.session_name} | Can't get bird data...")
                     elif bird_data['status'] == "hunting":
-                        given_time = datetime.fromisoformat(bird_data['hunt_end_at'])
-                        timestamp_naive = given_time.replace(tzinfo=None)
-                        now = datetime.utcnow()
-                        if now < timestamp_naive:
+                        # given_time = datetime.fromisoformat(bird_data['hunt_end_at'])
+                        given_time = parser.isoparse(bird_data['hunt_end_at'])
+                        # timestamp_naive = given_time.replace(tzinfo=None)
+                        # now = datetime.utcnow()
+                        now = datetime.now(timezone.utc)
+                        # if now < timestamp_naive:
+                        if now < given_time:
                             logger.info(f"{self.session_name} | Bird currently hunting...")
                         else:
                             logger.info(f"{self.session_name} | Hunt completed, claiming reward...")
